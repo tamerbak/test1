@@ -84,7 +84,7 @@ def calculate_flow_response_times(flows):
     return flow_response_times
 
 
-st.title("Architecture Metrics Calculator")
+st.title("Architecture flows report")
 uploaded_file = st.file_uploader("Upload Draw.io XML file")
 
 if uploaded_file is not None:
