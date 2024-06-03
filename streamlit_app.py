@@ -1,40 +1,72 @@
-import altair as alt
-import numpy as np
-import pandas as pd
 import streamlit as st
+import xml.etree.ElementTree as ET
+from collections import defaultdict
+import pandas as pd
 
-"""
-# Welcome to Streamlit!
+# Function to parse the XML file and extract nodes and edges
+def parse_xml(xml_content):
+    tree = ET.ElementTree(ET.fromstring(xml_content))
+    root = tree.getroot()
+    
+    nodes = {}
+    edges = []
+    flows = defaultdict(list)
+    
+    for cell in root.findall('.//mxCell'):
+        cell_id = cell.get('id')
+        if cell.get('source') and cell.get('target'):
+            # It's an edge
+            edges.append({
+                'source': cell.get('source'),
+                'target': cell.get('target')
+            })
+        else:
+            # It's a node
+            data = {elem.get('key'): elem.text for elem in cell.findall('data')}
+            flow = data.get('flow')
+            step = data.get('step')
+            if flow and step:
+                flows[flow].append({
+                    'id': cell_id,
+                    'response_time': float(data.get('responseTime', 0)),
+                    'step': int(step)
+                })
+            else:
+                nodes[cell_id] = {
+                    'id': cell_id,
+                    'response_time': float(data.get('responseTime', 0)),
+                    'flow': flow,
+                    'step': step
+                }
+    
+    return nodes, edges, flows
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+# Function to calculate the total response time for each flow
+def calculate_flow_response_times(flows):
+    flow_response_times = {}
+    for flow_id, steps in flows.items():
+        steps_sorted = sorted(steps, key=lambda x: x['step'])
+        total_response_time = sum(step['response_time'] for step in steps_sorted)
+        flow_response_times[flow_id] = total_response_time
+    return flow_response_times
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+st.title("Architecture Metrics Calculator")
+uploaded_file = st.file_uploader("Upload Draw.io XML file")
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
-
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
-
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
-
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+if uploaded_file is not None:
+    xml_content = uploaded_file.read().decode("utf-8")
+    nodes, edges, flows = parse_xml(xml_content)
+    
+    # Display nodes, edges, and flows
+    st.write("Nodes:", nodes)
+    st.write("Edges:", edges)
+    st.write("Flows:", flows)
+    
+    # Calculate response times for each flow
+    flow_response_times = calculate_flow_response_times(flows)
+    
+    # Display the results in a table
+    st.write("Flow Response Times:")
+    df = pd.DataFrame(list(flow_response_times.items()), columns=["Flow ID", "Total Response Time (ms)"])
+    st.table(df)
