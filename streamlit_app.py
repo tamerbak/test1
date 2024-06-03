@@ -105,8 +105,8 @@ if uploaded_file is not None:
     st.table(df)
     
     # Display the detailed flow information
-    st.write("Detailed Flow Information:")
-    for flow_id, steps in flows.items():
-        st.write(f"Flow ID: {flow_id}")
-        flow_df = pd.DataFrame(steps)
-        st.table(flow_df)
+    with st.expander('Detailed Flow Information:'):
+        for flow_id, steps in flows.items():
+            st.write(f"Flow ID: {flow_id}")
+            flow_df = pd.DataFrame(steps)
+            st.table(flow_df)
