@@ -101,12 +101,14 @@ if uploaded_file is not None:
     
     # Display the results in a table
     st.write("Flows list:")
-    df = pd.DataFrame(flow_response_times)
-    st.table(df)
+    st.dataframe(flow_response_times, hide_index=True)
+    #df = pd.DataFrame(flow_response_times)
+    #st.table(df)
     
     # Display the detailed flow information
     with st.expander('Detailed Flow Information:'):
         for flow_id, steps in flows.items():
             st.write(f"Flow ID: {flow_id}")
-            flow_df = pd.DataFrame(steps)
-            st.table(flow_df)
+            st.dataframe(steps, hide_index=True)
+            #flow_df = pd.DataFrame(steps)
+            #st.table(flow_df)
